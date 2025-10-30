@@ -1,3 +1,4 @@
+// @ts-ignore
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -95,25 +96,40 @@ ${requestData.budget ? `预算：${requestData.budget} 元` : ''}
 type 可选值：attraction（景点）、restaurant（餐厅）、transport（交通）、hotel（住宿）、other（其他）
 `
 
-    // 调用 AI API（这里使用 Kimi/GPT-4，需要您配置 API Key）
-    const aiApiKey = Deno.env.get('KIMI_API_KEY') || Deno.env.get('OPENAI_API_KEY')
-    if (!aiApiKey) {
-      throw new Error('未配置 AI API Key')
+    // 调用 AI API（支持 Kimi 和 GPT-4）
+    const kimiApiKey = Deno.env.get('KIMI_API_KEY')
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
+
+    let aiApiUrl = ''
+    let aiApiKey = ''
+    let aiModel = ''
+
+    if (kimiApiKey) {
+      aiApiUrl = 'https://api.moonshot.cn/v1/chat/completions'
+      aiApiKey = kimiApiKey
+      aiModel = 'moonshot-v1-8k'
+    } else if (openaiApiKey) {
+      aiApiUrl = 'https://api.openai.com/v1/chat/completions'
+      aiApiKey = openaiApiKey
+      aiModel = 'gpt-4'
+    } else {
+      throw new Error('未配置 AI API Key (需要 KIMI_API_KEY 或 OPENAI_API_KEY)')
     }
 
-    // 这里是一个示例，您需要根据实际使用的 AI 服务调整
-    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    console.log(`使用 AI 模型: ${aiModel}`)
+
+    const aiResponse = await fetch(aiApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${aiApiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+          model: aiModel,
         messages: [
           {
             role: 'system',
-            content: '你是一个专业的旅行规划助手，擅长根据用户需求生成详细的旅行计划。',
+            content: '你是一个专业的旅行规划助手，擅长根据用户需求生成详细的旅行计划。请始终以 JSON 格式返回结果。',
           },
           {
             role: 'user',
@@ -125,25 +141,40 @@ type 可选值：attraction（景点）、restaurant（餐厅）、transport（�
     })
 
     if (!aiResponse.ok) {
-      throw new Error('AI API 调用失败')
+      const errorText = await aiResponse.text()
+      console.error('AI API 错误:', errorText)
+      throw new Error(`AI API 调用失败: ${aiResponse.status} ${errorText}`)
     }
 
     const aiData = await aiResponse.json()
     const aiContent = aiData.choices[0].message.content
 
+    console.log('AI 响应:', aiContent)
+
     // 解析 AI 返回的 JSON
     let tripPlan
     try {
-      // 尝试提取 JSON
-      const jsonMatch = aiContent.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        tripPlan = JSON.parse(jsonMatch[0])
-      } else {
-        tripPlan = JSON.parse(aiContent)
+      // 尝试提取 JSON（移除可能的 markdown 代码块标记）
+      let jsonStr = aiContent.trim()
+
+      // 移除 markdown 代码块标记
+      if (jsonStr.startsWith('```json')) {
+        jsonStr = jsonStr.replace(/^```json\s*/, '').replace(/\s*```$/, '')
+      } else if (jsonStr.startsWith('```')) {
+        jsonStr = jsonStr.replace(/^```\s*/, '').replace(/\s*```$/, '')
+      }
+
+      // 尝试解析
+      tripPlan = JSON.parse(jsonStr)
+
+      // 验证必需字段
+      if (!tripPlan.title || !tripPlan.destination || !tripPlan.days) {
+        throw new Error('AI 返回的数据缺少必需字段')
       }
     } catch (e) {
       console.error('解析 AI 响应失败:', e)
-      throw new Error('AI 返回的数据格式不正确')
+      console.error('原始内容:', aiContent)
+      throw new Error('AI 返回的数据格式不正确，请重试')
     }
 
     // 步骤3：调用高德地图 API 获取地理位置信息

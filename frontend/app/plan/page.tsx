@@ -2,17 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Button, message, Card, Select, DatePicker } from 'antd';
+import { Form, Input, Button, message, Card, DatePicker } from 'antd';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/hooks/useUser';
-import dayjs from 'dayjs';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
 export default function PlanPage() {
   const [loading, setLoading] = useState(false);
-  const [inputType, setInputType] = useState<'text' | 'voice'>('text');
   const { user } = useUser();
   const router = useRouter();
 

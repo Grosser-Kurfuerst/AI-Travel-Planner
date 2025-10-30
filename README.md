@@ -30,44 +30,94 @@
 - OpenAI/Kimi API Key
 - 高德地图 API Key
 
-### 安装步骤
+### 详细步骤
 
-1. **克隆项目**
-   ```bash
-   git clone <your-repo-url>
-   cd AI-Travel-Planner
-   ```
+#### 1. 克隆项目
+```bash
+git clone <your-repo-url>
+cd AI-Travel-Planner
+```
 
-2. **安装前端依赖**
-   ```bash
-   cd frontend
-   npm install
-   ```
+#### 2. 配置 Supabase（必读！）
 
-3. **配置环境变量**
-   
-   复制 `.env.local.example` 为 `.env.local` 并填入配置：
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   NEXT_PUBLIC_AMAP_KEY=your_amap_js_api_key
-   ```
+**请仔细阅读并按照 [SUPABASE_GUIDE.md](./SUPABASE_GUIDE.md) 进行配置**
 
-4. **配置 Supabase**
-   
-   - 创建 Supabase 项目
-   - 在 SQL Editor 中执行 `supabase/schema.sql`
-   - 配置 Edge Functions Secrets
-   - 部署 Edge Functions
-   
-   详细步骤请查看 [DEPLOYMENT.md](./DEPLOYMENT.md)
+这是最重要的步骤，包括：
+- ✅ 创建 Supabase 项目
+- ✅ 执行数据库 SQL 脚本
+- ✅ 配置 Edge Functions Secrets
+- ✅ 部署 Edge Functions
 
-5. **启动开发服务器**
-   ```bash
-   npm run dev
-   ```
-   
-   访问 `http://localhost:3000`
+#### 3. 安装前端依赖
+```bash
+cd frontend
+npm install
+```
+
+#### 4. 配置前端环境变量
+
+复制示例文件：
+```bash
+cp frontend/.env.local.example frontend/.env.local
+```
+
+编辑 `frontend/.env.local`，填入你的配置：
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
+NEXT_PUBLIC_AMAP_KEY=your_amap_js_api_key
+```
+
+#### 5. 检查配置
+```bash
+node check-env.js
+```
+
+如果所有检查通过，继续下一步。
+
+#### 6. 启动开发服务器
+
+**方式 1：使用快速启动脚本（推荐）**
+```bash
+./start.sh
+```
+
+**方式 2：手动启动**
+```bash
+cd frontend
+npm run dev
+```
+
+访问 `http://localhost:3000`
+
+### 第一次使用
+
+1. **注册账号**
+   - 访问首页，点击"注册"
+   - 填写邮箱和密码
+   - 如果启用了邮箱验证，需要验证邮箱
+
+2. **创建第一个行程**
+   - 登录后点击"创建新行程"
+   - 填写目的地、日期、预算
+   - 在"详细描述"中尽可能详细地描述你的需求，例如：
+     ```
+     我想去日本东京旅游5天，喜欢动漫文化和美食。
+     希望去秋叶原、涩谷、新宿等地方。
+     想品尝地道的拉面和寿司。
+     预算5000元左右。
+     ```
+   - 点击"生成行程"，等待 15-30 秒
+
+3. **查看行程**
+   - 生成完成后自动跳转到行程详情页
+   - 查看每日活动安排
+   - 在地图上查看景点位置
+
+4. **记录费用**
+   - 在行程详情页点击"记录费用"
+   - 填写金额、分类和备注
+   - 实时查看预算使用情况
 
 ## 部署指南
 
