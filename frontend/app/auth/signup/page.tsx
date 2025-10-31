@@ -26,11 +26,23 @@ export default function SignupPage() {
 
       if (error) throw error;
 
-      message.success('注册成功！请检查您的邮箱以验证账号');
-      router.push('/auth/login');
+      message.success('注册成功！正在跳转...');
+
+      // 如果邮箱验证被禁用，用户会自动登录，跳转到首页
+      // 如果启用了邮箱验证，跳转到登录页
+      setTimeout(() => {
+        if (data.session) {
+          // 已自动登录
+          router.push('/');
+          router.refresh();
+        } else {
+          // 需要验证邮箱
+          message.info('请检查您的邮箱以验证账号');
+          router.push('/auth/login');
+        }
+      }, 500);
     } catch (error: any) {
       message.error(error.message || '注册失败，请稍后重试');
-    } finally {
       setLoading(false);
     }
   };

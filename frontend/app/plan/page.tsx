@@ -11,7 +11,7 @@ const { RangePicker } = DatePicker;
 
 export default function PlanPage() {
   const [loading, setLoading] = useState(false);
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const router = useRouter();
 
   const onFinish = async (values: any) => {
@@ -52,15 +52,29 @@ export default function PlanPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
       <div className="container mx-auto px-4 max-w-3xl">
-        <Card>
-          <h1 className="text-3xl font-bold mb-6">创建新行程</h1>
+        {userLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <div>加载中...</div>
+          </div>
+        ) : !user ? (
+          <Card>
+            <div className="text-center py-8">
+              <p className="mb-4">请先登录后再创建行程</p>
+              <Button type="primary" onClick={() => router.push('/auth/login')}>
+                前往登录
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <Card>
+            <h1 className="text-3xl font-bold mb-6">创建新行程</h1>
 
-          <Form
-            name="plan"
-            onFinish={onFinish}
-            layout="vertical"
-            autoComplete="off"
-          >
+            <Form
+              name="plan"
+              onFinish={onFinish}
+              layout="vertical"
+              autoComplete="off"
+            >
             <Form.Item
               label="目的地"
               name="destination"
@@ -127,6 +141,7 @@ export default function PlanPage() {
             </ul>
           </div>
         </Card>
+        )}
       </div>
     </div>
   );

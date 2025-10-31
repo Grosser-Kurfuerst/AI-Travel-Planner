@@ -18,19 +18,22 @@ export default function TripDetailPage() {
   const [loading, setLoading] = useState(true);
   const [expenseModalVisible, setExpenseModalVisible] = useState(false);
   const [expenseForm] = Form.useForm();
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // 等待用户状态加载完成
+    if (userLoading) return;
+
     if (!user) {
       router.push('/auth/login');
       return;
     }
 
     loadTripData();
-  }, [user, tripId, router]);
+  }, [user, userLoading, tripId, router]);
 
   useEffect(() => {
     if (activities.length > 0 && mapContainerRef.current) {

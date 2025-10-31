@@ -21,10 +21,14 @@ export default function LoginPage() {
       if (error) throw error;
 
       message.success('登录成功！');
-      router.push('/trips');
+
+      // 等待认证状态更新后再跳转
+      setTimeout(() => {
+        router.push('/');
+        router.refresh(); // 刷新页面确保状态更新
+      }, 500);
     } catch (error: any) {
       message.error(error.message || '登录失败，请检查您的邮箱和密码');
-    } finally {
       setLoading(false);
     }
   };

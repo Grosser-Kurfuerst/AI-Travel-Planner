@@ -11,10 +11,14 @@ import dayjs from 'dayjs';
 export default function TripsPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
+    // 等待用户状态加载完成
+    if (userLoading) return;
+
+    // 如果没有用户，跳转到登录页
     if (!user) {
       router.push('/auth/login');
       return;
@@ -42,7 +46,7 @@ export default function TripsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, router]);
+  }, [user, userLoading, router]);
 
   const loadTrips = async () => {
     try {

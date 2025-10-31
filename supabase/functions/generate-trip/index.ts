@@ -94,6 +94,7 @@ ${requestData.budget ? `预算：${requestData.budget} 元` : ''}
 }
 
 type 可选值：attraction（景点）、restaurant（餐厅）、transport（交通）、hotel（住宿）、other（其他）
+回答请不要有前缀或后缀、也不需要转义字符、严格按照json格式返回
 `
 
     // 调用 AI API（支持 Kimi 和 GPT-4）
@@ -107,7 +108,7 @@ type 可选值：attraction（景点）、restaurant（餐厅）、transport（�
     if (kimiApiKey) {
       aiApiUrl = 'https://api.moonshot.cn/v1/chat/completions'
       aiApiKey = kimiApiKey
-      aiModel = 'moonshot-v1-8k'
+      aiModel = 'moonshot-v1-32k'
     } else if (openaiApiKey) {
       aiApiUrl = 'https://api.openai.com/v1/chat/completions'
       aiApiKey = openaiApiKey
@@ -129,7 +130,7 @@ type 可选值：attraction（景点）、restaurant（餐厅）、transport（�
         messages: [
           {
             role: 'system',
-            content: '你是一个专业的旅行规划助手，擅长根据用户需求生成详细的旅行计划。请始终以 JSON 格式返回结果。',
+            content: '你是一个专业的旅行规划助手，擅长根据用户需求生成详细的旅行计划。'
           },
           {
             role: 'user',

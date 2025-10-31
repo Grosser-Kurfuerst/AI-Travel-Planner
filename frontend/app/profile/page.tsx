@@ -14,14 +14,15 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!user && !loading) {
+    // 等待 loading 完成
+    if (loading) return;
+
+    if (!user) {
       router.push('/auth/login');
       return;
     }
 
-    if (user) {
-      loadProfile();
-    }
+    loadProfile();
   }, [user, loading, router]);
 
   const loadProfile = async () => {
