@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Button, message, Card, DatePicker } from 'antd';
+import { Form, Input, Button, message, Card, DatePicker, Space, Tooltip } from 'antd';
+import { AudioOutlined, AudioMutedOutlined } from '@ant-design/icons';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/hooks/useUser';
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -13,6 +15,29 @@ export default function PlanPage() {
   const [loading, setLoading] = useState(false);
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
+  const [form] = Form.useForm();
+
+  // 语音识别
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    resetTranscript,
+    isSupported,
+    error: speechError,
+  } = useSpeechRecognition();
+
+  // 当语音识别有新内容时，更新表单
+  useEffect(() => {
+    if (transcript) {
+      const currentValue = form.getFieldValue('description') || '';
+      form.setFieldsValue({
+        description: currentValue + transcript,
+      });
+      resetTranscript();
+    }
+  }, [transcript, form, resetTranscript]);
 
   const onFinish = async (values: any) => {
     if (!user) {
@@ -71,76 +96,124 @@ export default function PlanPage() {
 
             <Form
               name="plan"
+              form={form}
               onFinish={onFinish}
               layout="vertical"
               autoComplete="off"
             >
-            <Form.Item
-              label="目的地"
-              name="destination"
-              rules={[{ required: true, message: '请输入目的地！' }]}
-            >
-              <Input size="large" placeholder="例如：日本东京" />
-            </Form.Item>
-
-            <Form.Item
-              label="出行日期"
-              name="dateRange"
-              rules={[{ required: true, message: '请选择出行日期！' }]}
-            >
-              <RangePicker
-                size="large"
-                style={{ width: '100%' }}
-                format="YYYY-MM-DD"
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="预算（元）"
-              name="budget"
-            >
-              <Input
-                size="large"
-                type="number"
-                placeholder="例如：5000"
-                prefix="¥"
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="详细描述"
-              name="description"
-              rules={[{ required: true, message: '请描述您的旅行需求！' }]}
-              extra="请详细描述您的旅行需求，例如：喜欢的景点类型、美食偏好、住宿要求等"
-            >
-              <TextArea
-                rows={6}
-                placeholder="例如：我想去日本东京旅游5天，喜欢动漫文化和美食，预算5000元左右..."
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-                loading={loading}
-                block
+              <Form.Item
+                label="目的地"
+                name="destination"
+                rules={[{ required: true, message: '请输入目的地！' }]}
               >
-                生成行程
-              </Button>
-            </Form.Item>
-          </Form>
+                <Input size="large" placeholder="例如：日本东京" />
+              </Form.Item>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="font-semibold mb-2">💡 提示</h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>• 描述越详细，AI 生成的行程越符合您的需求</li>
-              <li>• 可以包含兴趣爱好、饮食偏好、出行人数等信息</li>
-              <li>• 生成后可以继续修改和调整行程</li>
-            </ul>
-          </div>
-        </Card>
+              <Form.Item
+                label="出行日期"
+                name="dateRange"
+                rules={[{ required: true, message: '请选择出行日期！' }]}
+              >
+                <RangePicker
+                  size="large"
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="预算（元）"
+                name="budget"
+              >
+                <Input
+                  size="large"
+                  type="number"
+                  placeholder="例如：5000"
+                  prefix="¥"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label={
+                  <Space>
+                    <span>详细描述</span>
+                    {isSupported && (
+                      <Tooltip title={isListening ? '点击停止录音' : '点击开始语音输入'}>
+                        <Button
+                          type={isListening ? 'primary' : 'default'}
+                          icon={isListening ? <AudioMutedOutlined /> : <AudioOutlined />}
+                          onClick={() => {
+                            if (isListening) {
+                              stopListening();
+                              message.success('语音输入已停止');
+                            } else {
+                              startListening();
+                              message.info('开始语音输入，请说话...');
+                            }
+                          }}
+                          danger={isListening}
+                          size="small"
+                        >
+                          {isListening ? '停止录音' : '语音输入'}
+                        </Button>
+                      </Tooltip>
+                    )}
+                  </Space>
+                }
+                name="description"
+                rules={[{ required: true, message: '请描述您的旅行需求！' }]}
+                extra={
+                  <div>
+                    {speechError && (
+                      <div className="text-red-500 text-sm mb-2">
+                        ⚠️ {speechError}
+                      </div>
+                    )}
+                    {isListening && (
+                      <div className="text-blue-600 text-sm mb-2">
+                        🎤 正在录音中...
+                      </div>
+                    )}
+                    {!isSupported && (
+                      <div className="text-orange-500 text-sm mb-2">
+                        ℹ️ 您的浏览器不支持语音输入，建议使用 Chrome 或 Edge 浏览器
+                      </div>
+                    )}
+                    <span className="text-gray-500">
+                      请详细描述您的旅行需求，例如：喜欢的景点类型、美食偏好、住宿要求等
+                    </span>
+                  </div>
+                }
+              >
+                <TextArea
+                  rows={6}
+                  placeholder="例如：我想去日本东京旅游5天，喜欢动漫文化和美食，预算5000元左右...（支持语音输入）"
+                />
+              </Form.Item>
+
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  loading={loading}
+                  block
+                >
+                  生成行程
+                </Button>
+              </Form.Item>
+            </Form>
+
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <h3 className="font-semibold mb-2">💡 提示</h3>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• 描述越详细，AI 生成的行程越符合您的需求</li>
+                <li>• 可以包含兴趣爱好、饮食偏好、出行人数等信息</li>
+                <li>• 支持语音输入，点击"语音输入"按钮即可开始说话</li>
+                <li>• 生成后可以继续修改和调整行程</li>
+              </ul>
+            </div>
+          </Card>
         )}
       </div>
     </div>
