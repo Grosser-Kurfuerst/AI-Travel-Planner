@@ -7,12 +7,6 @@ on:
       - master
     paths:
       - 'frontend/**'
-  pull_request:
-    branches:
-      - main
-      - master
-    paths:
-      - 'frontend/**'
   workflow_dispatch:
 
 env:
@@ -21,13 +15,21 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      # 添加调试步骤
+      - name: Debug registry info
+        run: |
+          echo "Registry: ${{ secrets.ALIYUN_REGISTRY }}"
+          echo "Namespace: ${{ secrets.ALIYUN_NAMESPACE }}"
+          echo "Image: ${{ env.IMAGE_NAME }}"
+          echo "Full path: ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAMESPACE }}/${{ env.IMAGE_NAME }}"
 
       - name: Log in to Aliyun Container Registry
         uses: docker/login-action@v3
@@ -40,12 +42,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
+          # 确保路径格式正确
           images: ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAMESPACE }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
@@ -66,6 +66,3 @@ jobs:
             NEXT_PUBLIC_XFYUN_APP_ID=${{ secrets.NEXT_PUBLIC_XFYUN_APP_ID }}
             NEXT_PUBLIC_XFYUN_API_SECRET=${{ secrets.NEXT_PUBLIC_XFYUN_API_SECRET }}
             NEXT_PUBLIC_XFYUN_API_KEY=${{ secrets.NEXT_PUBLIC_XFYUN_API_KEY }}
-
-      - name: Image digest
-        run: echo ${{ steps.build-and-push.outputs.digest }}
