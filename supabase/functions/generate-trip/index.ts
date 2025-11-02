@@ -8,10 +8,11 @@ const corsHeaders = {
 }
 
 /**
- * 调用 OpenAI 兼容的 API (Kimi/GPT-4) - 非流式
+ * 调用 OpenAI 兼容的 API (Kimi/GPT-4) - 流式传输
  */
 async function callOpenAICompatibleAPI(apiUrl: string, apiKey: string, model: string, prompt: string): Promise<string> {
-  console.log('调用 AI API (非流式模式)...')
+  console.log('调用 AI API (流式模式)...')
+  console.log('API URL:', apiUrl)
 
   const response = await fetch(apiUrl, {
     method: 'POST',
@@ -32,8 +33,8 @@ async function callOpenAICompatibleAPI(apiUrl: string, apiKey: string, model: st
         },
       ],
       temperature: 0.7,
-      max_tokens: 8000,  // 降低 token 限制，避免超过配额
-      stream: false,  // 关闭流式传输
+      max_tokens: 12000,
+      stream: true,  // 启用流式传输
     }),
   })
 
@@ -43,32 +44,96 @@ async function callOpenAICompatibleAPI(apiUrl: string, apiKey: string, model: st
     throw new Error(`AI API 调用失败: ${response.status} ${errorText}`)
   }
 
-  // 处理普通 JSON 响应
-  const responseData = await response.json()
+  // 处理流式响应
+  const reader = response.body?.getReader()
+  const decoder = new TextDecoder()
 
-  console.log('AI API 响应结构:', JSON.stringify(responseData).substring(0, 200))
-
-  // 提取内容
-  if (!responseData.choices || !responseData.choices[0] || !responseData.choices[0].message) {
-    console.error('响应格式异常:', JSON.stringify(responseData))
-    throw new Error('AI 返回的响应格式不正确')
+  if (!reader) {
+    throw new Error('无法读取响应流')
   }
 
-  const content = responseData.choices[0].message.content
+  console.log('开始接收流式数据...')
 
-  if (!content) {
+  let fullContent = ''  // 累积完整的内容
+  let chunkCount = 0
+  let buffer = ''  // 用于处理跨块的数据
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+
+      if (done) {
+        console.log(`流式数据接收完成，共 ${chunkCount} 个数据块`)
+        break
+      }
+
+      chunkCount++
+      const chunk = decoder.decode(value, { stream: true })
+      buffer += chunk
+
+      // 按行分割
+      const lines = buffer.split('\n')
+      // 保留最后不完整的行
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        const trimmedLine = line.trim()
+
+        // 跳过空行和注释
+        if (!trimmedLine || trimmedLine.startsWith(':')) {
+          continue
+        }
+
+        // 检查是否是结束标记
+        if (trimmedLine === 'data: [DONE]') {
+          console.log('收到结束标记 [DONE]')
+          continue
+        }
+
+        // 处理 SSE 数据
+        if (trimmedLine.startsWith('data: ')) {
+          try {
+            const jsonStr = trimmedLine.slice(6)  // 移除 'data: ' 前缀
+            const data = JSON.parse(jsonStr)
+
+            // 提取内容片段
+            if (data.choices && data.choices[0]) {
+              const delta = data.choices[0].delta
+              if (delta && delta.content) {
+                fullContent += delta.content
+
+                // 每接收 500 字符输出一次进度
+                if (fullContent.length % 500 < delta.content.length) {
+                  console.log(`已接收 ${fullContent.length} 字符...`)
+                }
+              }
+
+              // 检查结束原因
+              const finishReason = data.choices[0].finish_reason
+              if (finishReason === 'stop') {
+                console.log('✅ AI 响应正常结束')
+              } else if (finishReason === 'length') {
+                console.warn('⚠️ 警告：响应因 token 限制被截断')
+              }
+            }
+          } catch (e) {
+            // 跳过解析失败的行（可能是不完整的数据）
+            // 静默处理，不影响整体流程
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  console.log('AI 完整响应长度:', fullContent.length)
+
+  if (!fullContent) {
     throw new Error('AI 未返回任何内容')
   }
 
-  // 检查是否因为长度限制被截断
-  if (responseData.choices[0].finish_reason === 'length') {
-    console.warn('⚠️ 警告：响应因 token 限制被截断！')
-  } else if (responseData.choices[0].finish_reason === 'stop') {
-    console.log('✅ AI 响应正常结束')
-  }
-
-  console.log('AI 完整响应长度:', content.length)
-  return content
+  return fullContent
 }
 
 
