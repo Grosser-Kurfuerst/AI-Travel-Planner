@@ -307,45 +307,7 @@ const aiResponse = await fetch('https://api.moonshot.cn/v1/chat/completions', {
 3. 在 Supabase 控制台，Authentication → URL Configuration，添加：
    - **Site URL**: `https://your-app.vercel.app`
    - **Redirect URLs**: `https://your-app.vercel.app/**`
-
----
-
-## 常见问题
-
-### Q1: Edge Function 调用失败
-
-**检查清单**：
-- 函数是否部署成功？（Supabase 控制台 Edge Functions 页面）
-- Secrets 是否配置正确？（`supabase secrets list`）
-- API Key 是否有效？（尝试直接调用 API 测试）
-- 查看函数日志：Supabase 控制台 → Edge Functions → 选择函数 → Logs
-
-### Q2: 数据库权限错误
-
-**可能原因**：
-- RLS 策略未正确配置
-- 用户未登录或 token 过期
-
-**解决方法**：
-- 重新执行 `schema.sql`
-- 检查浏览器控制台是否有认证错误
-- 尝试退出登录再重新登录
-
-### Q3: 地图不显示
-
-**检查清单**：
-- 高德地图 Key 是否正确配置？
-- 域名是否在白名单中？
-- 浏览器控制台是否有错误？
-- 活动数据是否包含经纬度？
-
-### Q4: AI 生成的行程不理想
-
-**优化建议**：
-- 提供更详细的描述（兴趣、偏好、人数等）
-- 在 Edge Function 中调整 Prompt
-- 调整 AI 模型参数（temperature、max_tokens）
-
+   
 ---
 
 ## 项目结构
@@ -369,25 +331,3 @@ AI-Travel-Planner/
         ├── generate-trip/
         └── record-expense-voice/
 ```
-
----
-
-## 下一步优化建议
-
-1. **语音识别集成**：完整实现科大讯飞语音识别功能
-2. **实时协作**：利用 Supabase Realtime 实现多人协作规划
-3. **图片上传**：添加景点照片、票据照片等
-4. **社交分享**：生成行程分享图片或链接
-5. **离线支持**：使用 PWA 技术支持离线访问
-6. **多语言支持**：i18n 国际化
-7. **性能优化**：添加缓存、懒加载等
-
----
-
-## 联系与支持
-
-如有问题，请查阅：
-- [Supabase 文档](https://supabase.com/docs)
-- [Next.js 文档](https://nextjs.org/docs)
-- [高德地图 API 文档](https://lbs.amap.com/api/javascript-api/summary)
-
