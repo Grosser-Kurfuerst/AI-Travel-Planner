@@ -57,11 +57,15 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
 
     // 设置回调函数
     recognition.onResult = (result) => {
+      // 只在最终结果时更新 transcript，避免重复触发
       if (result.isFinal) {
-        // 最终结果
-        setTranscript(prev => prev + result.text);
+        console.log('收到最终识别结果:', result.text);
+        setTranscript(result.text);  // 直接设置，不累加
+        setError(null);
+      } else {
+        // 中间结果只用于调试，不更新 transcript
+        console.log('收到中间识别结果（忽略）:', result.text);
       }
-      setError(null);
     };
 
     recognition.onError = (errorMessage) => {

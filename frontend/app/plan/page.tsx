@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Form, Input, Button, message, Card, DatePicker, Space, Tooltip, Tag } from 'antd';
 import { AudioOutlined, AudioMutedOutlined } from '@ant-design/icons';
@@ -19,6 +19,7 @@ export default function PlanPage() {
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const [form] = Form.useForm();
+  const lastProcessedTranscript = useRef<string>(''); // 追踪已处理的 transcript
 
   // 语音识别
   const {
@@ -33,7 +34,11 @@ export default function PlanPage() {
 
   // 当语音识别有新内容时，解析并更新表单
   useEffect(() => {
-    if (transcript) {
+    // 确保 transcript 有内容且与上次处理的不同
+    if (transcript && transcript !== lastProcessedTranscript.current) {
+      console.log('🔄 处理新的语音识别结果:', transcript);
+      lastProcessedTranscript.current = transcript;
+
       // 解析语音内容
       const parsedInfo = parseVoiceInput(transcript);
 
@@ -51,9 +56,10 @@ export default function PlanPage() {
         message.success(`已自动识别：${newParsedFields.join('、')}`);
       }
 
+      // 清空 transcript
       resetTranscript();
     }
-  }, [transcript, form, resetTranscript]);
+  }, [transcript]); // 只依赖 transcript，移除其他依赖避免循环
 
   const onFinish = async (values: any) => {
     if (!user) {
@@ -129,7 +135,7 @@ export default function PlanPage() {
                 name="destination"
                 rules={[{ required: true, message: '请输入目的地！' }]}
               >
-                <Input size="large" placeholder="例如：日本东京" />
+                <Input size="large" placeholder="例如：北京" />
               </Form.Item>
 
               <Form.Item
