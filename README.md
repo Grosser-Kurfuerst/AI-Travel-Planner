@@ -7,7 +7,8 @@
 - 🤖 **AI 智能规划**：基于 GPT-4/Kimi 大模型，根据需求自动生成详细行程
 - 🗺️ **地图可视化**：集成高德地图，直观展示景点位置和路线
 - 💰 **预算管理**：智能记账，实时追踪旅行开销
-- 🎤 **语音输入**：支持语音输入旅行描述，无需手动打字（仅支持 Chrome/Edge）
+- 🎤 **语音输入**：支持科大讯飞语音识别，智能提取目的地、日期、预算等信息
+- 🧠 **智能解析**：自动从语音中识别结构化信息，自动填充表单字段
 - 🔐 **安全可靠**：基于 Supabase 的行级安全策略，数据完全隔离
 - 📱 **响应式设计**：完美适配桌面和移动设备
 
@@ -15,6 +16,7 @@
 
 - **前端**：Next.js 15, TypeScript, Ant Design, Tailwind CSS
 - **后端**：Supabase (PostgreSQL + Edge Functions)
+- **语音识别**：科大讯飞语音听写（WebSocket实时）
 - **AI 模型**：OpenAI GPT-4 / Moonshot Kimi
 - **地图**：高德地图 JS API
 - **状态管理**：Zustand
@@ -27,6 +29,7 @@
 - Node.js 18+
 - npm 或 yarn
 - Supabase 账号
+- 科大讯飞 API 凭证（用于语音识别功能）
 - OpenAI/Kimi API Key
 - 高德地图 API Key
 

@@ -2,17 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Button, message, Card, DatePicker, Space, Tooltip } from 'antd';
+import { Form, Input, Button, message, Card, DatePicker, Space, Tooltip, Tag } from 'antd';
 import { AudioOutlined, AudioMutedOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/hooks/useUser';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
+import { parseVoiceInput, applyParsedInfoToForm } from '@/lib/voiceParser';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
 export default function PlanPage() {
   const [loading, setLoading] = useState(false);
+  const [parsedFields, setParsedFields] = useState<string[]>([]); // 记录自动识别的字段
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const [form] = Form.useForm();
@@ -28,13 +31,26 @@ export default function PlanPage() {
     error: speechError,
   } = useSpeechRecognition();
 
-  // 当语音识别有新内容时，更新表单
+  // 当语音识别有新内容时，解析并更新表单
   useEffect(() => {
     if (transcript) {
-      const currentValue = form.getFieldValue('description') || '';
-      form.setFieldsValue({
-        description: currentValue + transcript,
-      });
+      // 解析语音内容
+      const parsedInfo = parseVoiceInput(transcript);
+
+      // 应用到表单
+      const updatedFields = applyParsedInfoToForm(parsedInfo, form, dayjs);
+
+      // 记录哪些字段被自动识别了
+      const newParsedFields: string[] = [];
+      if (updatedFields.destination) newParsedFields.push('目的地');
+      if (updatedFields.dateRange) newParsedFields.push('出行日期');
+      if (updatedFields.budget) newParsedFields.push('预算');
+
+      if (newParsedFields.length > 0) {
+        setParsedFields(newParsedFields);
+        message.success(`已自动识别：${newParsedFields.join('、')}`);
+      }
+
       resetTranscript();
     }
   }, [transcript, form, resetTranscript]);
@@ -102,7 +118,14 @@ export default function PlanPage() {
               autoComplete="off"
             >
               <Form.Item
-                label="目的地"
+                label={
+                  <Space>
+                    <span>目的地</span>
+                    {parsedFields.includes('目的地') && (
+                      <Tag color="green" style={{ fontSize: '10px' }}>语音识别</Tag>
+                    )}
+                  </Space>
+                }
                 name="destination"
                 rules={[{ required: true, message: '请输入目的地！' }]}
               >
@@ -110,7 +133,14 @@ export default function PlanPage() {
               </Form.Item>
 
               <Form.Item
-                label="出行日期"
+                label={
+                  <Space>
+                    <span>出行日期</span>
+                    {parsedFields.includes('出行日期') && (
+                      <Tag color="green" style={{ fontSize: '10px' }}>语音识别</Tag>
+                    )}
+                  </Space>
+                }
                 name="dateRange"
                 rules={[{ required: true, message: '请选择出行日期！' }]}
               >
@@ -122,7 +152,14 @@ export default function PlanPage() {
               </Form.Item>
 
               <Form.Item
-                label="预算（元）"
+                label={
+                  <Space>
+                    <span>预算（元）</span>
+                    {parsedFields.includes('预算') && (
+                      <Tag color="green" style={{ fontSize: '10px' }}>语音识别</Tag>
+                    )}
+                  </Space>
+                }
                 name="budget"
               >
                 <Input
@@ -179,15 +216,26 @@ export default function PlanPage() {
                         ℹ️ 您的浏览器不支持语音输入，建议使用 Chrome 或 Edge 浏览器
                       </div>
                     )}
-                    <span className="text-gray-500">
-                      请详细描述您的旅行需求，例如：喜欢的景点类型、美食偏好、住宿要求等
-                    </span>
+                    {parsedFields.length > 0 && (
+                      <div className="text-green-600 text-sm mb-2">
+                        ✅ 已自动识别：{parsedFields.join('、')}
+                      </div>
+                    )}
+                    <div className="text-gray-500 text-sm">
+                      <div className="mb-1">💡 语音输入示例：</div>
+                      <div className="pl-4">
+                        "去北京旅游，11月15日到20日，预算5000元，喜欢历史与传统"
+                      </div>
+                      <div className="mt-2">
+                        系统会自动识别目的地、日期、预算等信息并填入对应字段
+                      </div>
+                    </div>
                   </div>
                 }
               >
                 <TextArea
                   rows={6}
-                  placeholder="例如：我想去日本东京旅游5天，喜欢动漫文化和美食，预算5000元左右...（支持语音输入）"
+                  placeholder="例如：去北京旅游，11月15日到20日，预算5000元，喜欢历史与传统（支持语音输入）"
                 />
               </Form.Item>
 

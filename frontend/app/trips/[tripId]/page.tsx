@@ -6,7 +6,6 @@ import { Card, Button, Timeline, Tag, Spin, message, Tabs, Modal, Form, Input, S
 import { EnvironmentOutlined, ClockCircleOutlined, DollarOutlined } from '@ant-design/icons';
 import { supabase, Trip, Activity, Expense } from '@/lib/supabaseClient';
 import { useUser } from '@/hooks/useUser';
-import AMapLoader from '@amap/amap-jsapi-loader';
 import dayjs from 'dayjs';
 
 export default function TripDetailPage() {
@@ -82,6 +81,9 @@ export default function TripDetailPage() {
 
   const initMap = async () => {
     try {
+      // 动态导入 AMapLoader，只在客户端执行
+      const AMapLoader = (await import('@amap/amap-jsapi-loader')).default;
+
       const AMap = await AMapLoader.load({
         key: process.env.NEXT_PUBLIC_AMAP_KEY || '',
         version: '2.0',

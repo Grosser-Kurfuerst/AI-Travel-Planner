@@ -13,6 +13,7 @@
     "@ant-design/nextjs-registry": "^1.2.0",
     "@supabase/supabase-js": "^2.77.0",
     "antd": "^5.27.6",
+    "crypto-js": "^4.2.0",
     "dayjs": "^1.11.18",
     "next": "16.0.1",
     "react": "19.2.0",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/crypto-js": "^4.2.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

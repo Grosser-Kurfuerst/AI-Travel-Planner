@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Button, List, Tag, Spin, Empty, message } from 'antd';
-import { PlusOutlined, CalendarOutlined, EnvironmentOutlined, DollarOutlined } from '@ant-design/icons';
+import { Card, Button, List, Tag, Spin, Empty, message, Popconfirm } from 'antd';
+import { PlusOutlined, CalendarOutlined, EnvironmentOutlined, DollarOutlined, DeleteOutlined } from '@ant-design/icons';
 import { supabase, Trip } from '@/lib/supabaseClient';
 import { useUser } from '@/hooks/useUser';
 import dayjs from 'dayjs';
@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 export default function TripsPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
 
@@ -62,6 +63,47 @@ export default function TripsPage() {
       message.error('加载行程失败：' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteTrip = async (tripId: string, tripTitle: string) => {
+    setDeleting(tripId);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        message.error('请先登录');
+        return;
+      }
+
+      // 调用 Edge Function 删除行程
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-trip`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ tripId }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '删除失败');
+      }
+
+      message.success(`行程"${tripTitle}"已删除`);
+
+      // 刷新列表
+      loadTrips();
+    } catch (error: any) {
+      message.error('删除行程失败：' + error.message);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -129,26 +171,56 @@ export default function TripsPage() {
             grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 3, xxl: 3 }}
             dataSource={trips}
             renderItem={(trip) => (
-              <List.Item>
-                <Card
-                  hoverable
-                  onClick={() => router.push(`/trips/${trip.id}`)}
-                  className="h-full"
-                >
-                  <div className="mb-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-xl font-semibold">{trip.title}</h3>
-                      <Tag color={getStatusColor(trip.status)}>
-                        {getStatusText(trip.status)}
-                      </Tag>
-                    </div>
+            <List.Item>
+              <Card
+                hoverable
+                className="h-full"
+                actions={[
+                  <Button
+                    key="view"
+                    type="link"
+                    onClick={() => router.push(`/trips/${trip.id}`)}
+                  >
+                    查看详情
+                  </Button>,
+                  <Popconfirm
+                    key="delete"
+                    title="确认删除"
+                    description={`确定要删除行程"${trip.title}"吗？此操作无法撤销。`}
+                    onConfirm={(e) => {
+                      e?.stopPropagation();
+                      handleDeleteTrip(trip.id, trip.title);
+                    }}
+                    okText="确认删除"
+                    cancelText="取消"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button
+                      type="link"
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={deleting === trip.id}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      删除
+                    </Button>
+                  </Popconfirm>
+                ]}
+              >
+                <div className="mb-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-semibold">{trip.title}</h3>
+                    <Tag color={getStatusColor(trip.status)}>
+                      {getStatusText(trip.status)}
+                    </Tag>
                   </div>
+                </div>
 
-                  <div className="space-y-2 text-gray-600">
-                    <div className="flex items-center">
-                      <EnvironmentOutlined className="mr-2" />
-                      <span>{trip.destination}</span>
-                    </div>
+                <div className="space-y-2 text-gray-600">
+                  <div className="flex items-center">
+                    <EnvironmentOutlined className="mr-2" />
+                    <span>{trip.destination}</span>
+                  </div>
                     <div className="flex items-center">
                       <CalendarOutlined className="mr-2" />
                       <span>
