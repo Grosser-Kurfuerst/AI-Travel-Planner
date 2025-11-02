@@ -19,8 +19,6 @@
 - **语音识别**：科大讯飞语音听写（WebSocket实时）
 - **AI 模型**：Moonshot Kimi
 - **地图**：高德地图 JS API
-- **状态管理**：Zustand
-- **部署**：Vercel (前端) + Supabase (后端)
 
 ## 快速开始
 
