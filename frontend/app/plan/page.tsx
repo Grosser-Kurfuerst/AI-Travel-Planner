@@ -69,7 +69,16 @@ export default function PlanPage() {
     }
 
     setLoading(true);
+    const hideProgress = message.loading('AI 正在生成行程，请耐心等待...', 0);
+
     try {
+      // 创建超时控制器（5 分钟超时）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.log('请求超时，已中止');
+      }, 300000); // 300000ms = 5 分钟
+
       // 调用 Supabase Edge Function 生成行程
       const { data, error } = await supabase.functions.invoke('generate-trip', {
         body: {
@@ -82,14 +91,25 @@ export default function PlanPage() {
           ] : null,
           budget: values.budget,
         },
+        signal: controller.signal, // 添加超时控制
       });
+
+      clearTimeout(timeoutId); // 清除超时定时器
+      hideProgress(); // 隐藏加载提示
 
       if (error) throw error;
 
       message.success('行程生成成功！');
       router.push(`/trips/${data.tripId}`);
     } catch (error: any) {
-      message.error(error.message || '生成行程失败，请稍后重试');
+      hideProgress(); // 隐藏加载提示
+
+      // 判断是否是超时错误
+      if (error.name === 'AbortError') {
+        message.error('请求超时（5分钟），请检查网络或稍后重试');
+      } else {
+        message.error(error.message || '生成行程失败，请稍后重试');
+      }
       console.error('Error generating trip:', error);
     } finally {
       setLoading(false);

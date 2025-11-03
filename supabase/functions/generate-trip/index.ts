@@ -305,30 +305,6 @@ ${requestData.budget ? `预算：${requestData.budget} 元` : ''}
       }
 
       console.log('清理后的 JSON 长度:', jsonStr.length)
-      console.log('JSON 开头:', jsonStr.substring(0, 100))
-      console.log('JSON 结尾:', jsonStr.substring(Math.max(0, jsonStr.length - 100)))
-
-      // 检查 JSON 是否完整
-      const openBraces = (jsonStr.match(/{/g) || []).length
-      const closeBraces = (jsonStr.match(/}/g) || []).length
-      const openBrackets = (jsonStr.match(/\[/g) || []).length
-      const closeBrackets = (jsonStr.match(/]/g) || []).length
-
-      console.log('括号统计 - {}:', openBraces, '/', closeBraces, '[]:', openBrackets, '/', closeBrackets)
-
-      if (openBraces !== closeBraces || openBrackets !== closeBrackets) {
-        console.warn('JSON 括号不匹配，尝试修复...')
-
-        // 补全缺失的括号
-        for (let i = closeBrackets; i < openBrackets; i++) {
-          jsonStr += ']'
-          console.log('补充缺失的 ]')
-        }
-        for (let i = closeBraces; i < openBraces; i++) {
-          jsonStr += '}'
-          console.log('补充缺失的 }')
-        }
-      }
 
       // 尝试解析
       tripPlan = JSON.parse(jsonStr)

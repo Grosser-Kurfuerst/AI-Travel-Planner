@@ -294,10 +294,11 @@ supabase functions deploy generate-trip
 ✓ Deployed Function generate-trip
 ```
 
-### 步骤 5.2：部署 record-expense-voice 函数
+### 步骤 5.2：部署 record-expense-voice 与 delete-trip 函数 
 
 ```bash
 supabase functions deploy record-expense-voice
+supabase functions deploy delete-trip
 ```
 
 ### 步骤 5.3：验证部署
